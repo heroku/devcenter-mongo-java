@@ -86,4 +86,4 @@ DB Object Creation:
     DB db = mongo.getDB(config.getDbName());
     db.authenticate(config.getUsername(), config.getPassword().toCharArray());
 
-You can also download the [sample code](http://github.com/heroku/devcenter-mongo-java.git)
+You can also download the [sample code](http://github.com/heroku/devcenter-mongo-java)
