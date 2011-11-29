@@ -28,4 +28,46 @@
     	<version>2.2.2</version>
     </dependency>
   </dependencies>
+  
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                </configuration>
+            </plugin>
+
+            <!-- The maven app assembler plugin will generate a script that sets up the classpath and runs your project -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>appassembler-maven-plugin</artifactId>
+                <version>1.1.1</version>
+                <configuration>
+                    <assembleDirectory>target</assembleDirectory> 
+                    <programs>
+                        <program>
+                            <mainClass>com.heroku.devcenter.Main</mainClass>
+                            <name>sample</name>
+                        </program>
+                        <program>
+                            <mainClass>com.heroku.devcenter.spring.Main</mainClass>
+                            <name>spring-sample</name>
+                        </program>
+                    </programs>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>assemble</goal>
+                        </goals>
+                    </execution>				
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

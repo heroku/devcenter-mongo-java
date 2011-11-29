@@ -1,89 +1,57 @@
-## Using Mongo from Java
+## Using MongoDB from Java
 
-MongoDB offers a standard Java client. In order to use this client in your project you have to declare the dependency in your build and initialize the connection from the environment variable that Heroku provides to your application.
+This is an example of using Jedis to connect to the MongoHQ service from both a generic Java application and a Spring configured application on Heroku. Read more about how to use MongoHQ in the [add-on article](http://devcenter.heroku.com/articles/mongohq).
 
-### Add the Mongo Java driver to Your Pom.xml
+# Using The Sample Code
 
-Add the following dependency to your pom.xml:
+Clone the repo with:
 
-    <dependency>
-        <groupId>org.mongodb</groupId>
-        <artifactId>mongo-java-driver</artifactId>
-        <version>2.7.2</version>
-    </dependency>
+    $ git clone https://github.com/heroku/devcenter-mongo-java.git
 
-### Use MongoDB in Your Application
+Start up MongoDB locally and set the `MONGOHQ_URL` environment variable:
 
-    :::java
-    Pattern pattern = Pattern.compile("^mongodb://([^:]*):([^@]*)@([^:]*):([^/]*)/(.*)?");
-    //Parse the configuration URL
-    Matcher matcher = pattern.matcher(System.getenv("MONGOHQ_URL"));
-    matcher.matches();
-    Mongo mongo = new Mongo(matcher.group(3), Integer.valueOf(matcher.group(4)));
-    DB db = mongo.getDB(matcher.group(5));
-    db.authenticate(matcher.group(1), matcher.group(2).toCharArray());
-    //Use the db object to talk to MongoDB
-    Set<String> colls = db.getCollectionNames();
+    $ export MONGOHQ_URL="mongodb://:@localhost:6379/dbname"
 
-### Using MongoDB with Spring
+Build the sample:
 
-When using MongoDB with Spring you can create a bean that will hold your MongoDB configuration and then use Spring to initialize that bean:
+    $ mvn package
+    [INFO] Scanning for projects...
+    [INFO]                                                                         
+    [INFO] ------------------------------------------------------------------------
+    [INFO] Building mongoSample 0.0.1-SNAPSHOT
+    [INFO] ------------------------------------------------------------------------
+    ...
 
-MongoDB Configuration Bean:
+Run it with foreman:
 
-    public class MongoConfig {
-        private String host;
-        private int port;
-        private String dbName;
-        private String username;
-        private String password;
+    $ foreman start
+    18:37:42 sample.1        | started with pid 77461
+    18:37:42 springsample.1  | started with pid 77462
+    18:37:43 sample.1        | Setting up new mongo client for connection mongodb://heroku:94dd57798aea1b3cc5943e28efd42895@staff.mongohq.com:10055/app1797069
+    18:37:43 springsample.1  | Nov 28, 2011 6:37:43 PM org.springframework.context.support.AbstractApplicationContext prepareRefresh
+    18:37:43 springsample.1  | INFO: Refreshing org.springframework.context.annotation.AnnotationConfigApplicationContext@182d9c06: startup date [Mon Nov 28 18:37:43 PST 2011]; root of context hierarchy
+    18:37:43 springsample.1  | Nov 28, 2011 6:37:43 PM org.springframework.beans.factory.support.DefaultListableBeanFactory preInstantiateSingletons
+    18:37:43 springsample.1  | INFO: Pre-instantiating singletons in org.springframework.beans.factory.support.DefaultListableBeanFactory@ac980c9: defining beans [org.springframework.context.annotation.internalConfigurationAnnotationProcessor,org.springframework.context.annotation.internalAutowiredAnnotationProcessor,org.springframework.context.annotation.internalRequiredAnnotationProcessor,org.springframework.context.annotation.internalCommonAnnotationProcessor,springConfig,getDb]; root of factory hierarchy
+    18:37:43 springsample.1  | Setting up new mongo client for connection mongodb://heroku:94dd57798aea1b3cc5943e28efd42895@staff.mongohq.com:10055/app1797069
+    18:37:44 springsample.1  | Collections found in DB (Spring Configuration): [system.indexes, system.users]
+    18:37:44 springsample.1  | process exiting
+    18:37:44 sample.1        | Collections found in DB: [system.indexes, system.users]
+    18:37:44 springsample.1  | process terminated
+    18:37:44 system          | sending SIGTERM to all processes
 
-        //getters and setters ommitted
-    }
 
-This bean can be initialized with either Java or XML based spring configuration:
-
-Java Configuration:
+You can switch between the Java and XML based configuration by commenting out one of the two lines in `Main.java` in the `spring` sub-package:
 
     :::java
-    @Configuration
-    public class SpringConfig {
-        @Bean
-        public MongoConfig getMongoConfig() {
-            Pattern pattern = Pattern.compile("^mongodb://([^:]*):([^@]*)@([^:]*):([^/]*)/(.*)?");
-            //Parse the configuration URL
-            Matcher matcher = pattern.matcher(System.getenv("MONGOHQ_URL"));
-            matcher.matches();
+    public class Main {
+
+        public static void main(String[] args) throws Exception{
+
+            // If you want Java based configuration:
+            final ApplicationContext ctx = new AnnotationConfigApplicationContext(SpringConfig.class);
         
-            MongoConfig config = new MongoConfig();
-            config.setHost(matcher.group(3));
-            config.setPort(Integer.parseInt(matcher.group(4)));
-            config.setDbName(matcher.group(5));
-            config.setUsername(matcher.group(1));
-            config.setPassword(matcher.group(2));
-            return config;
-        }
-    }
+            // If you want XML based configuration:
+            //final ApplicationContext ctx = new GenericXmlApplicationContext("applicationContext.xml");
+        
+            ...
 
-or XML Configuration:
-
-    <bean class="com.heroku.devcenter.spring.MongoConfig">
-        <property name="host" value="#{systemEnvironment['MONGOHQ_URL'].replaceAll('^mongodb://([^:]*):([^@]*)@([^:]*):([^/]*)/(.*)?','$3') }"/>
-        <property name="port" value="#{systemEnvironment['MONGOHQ_URL'].replaceAll('^mongodb://([^:]*):([^@]*)@([^:]*):([^/]*)/(.*)?','$4') }"/>
-        <property name="dbName" value="#{systemEnvironment['MONGOHQ_URL'].replaceAll('^mongodb://([^:]*):([^@]*)@([^:]*):([^/]*)/(.*)?','$5') }"/>
-        <property name="username" value="#{systemEnvironment['MONGOHQ_URL'].replaceAll('^mongodb://([^:]*):([^@]*)@([^:]*):([^/]*)/(.*)?','$1') }"/>
-        <property name="password" value="#{systemEnvironment['MONGOHQ_URL'].replaceAll('^mongodb://([^:]*):([^@]*)@([^:]*):([^/]*)/(.*)?','$2') }"/>
-    </bean>
-
-DB Object Creation:
-
-    :::java
-    //for XML confiugration use GenericXmlApplicationContext
-    ApplicationContext ctx = new AnnotationConfigApplicationContext(SpringConfig.class);
-    MongoConfig config = ctx.getBean(MongoConfig.class);		
-
-    Mongo mongo = new Mongo(config.getHost(), config.getPort());
-    DB db = mongo.getDB(config.getDbName());
-    db.authenticate(config.getUsername(), config.getPassword().toCharArray());
-
-You can also download the [sample code](http://github.com/heroku/devcenter-mongo-java)

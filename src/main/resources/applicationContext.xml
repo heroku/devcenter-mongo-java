@@ -7,14 +7,42 @@
       http://www.springframework.org/schema/context
       http://www.springframework.org/schema/context/spring-context-3.0.xsd">
 
-  <context:annotation-config/>
+    <context:annotation-config/>
+    <context:property-placeholder/>
+  
+    <bean id="mongoURI" class="java.net.URI">
+      <constructor-arg value="${MONGOHQ_URL}"/>
+    </bean>
 
-  <bean class="com.heroku.devcenter.spring.MongoConfig">
-      <property name="host" value="#{systemEnvironment['MONGOHQ_URL'].replaceAll('^mongodb://([^:]*):([^@]*)@([^:]*):([^/]*)/(.*)?','$3') }"/>
-      <property name="port" value="#{systemEnvironment['MONGOHQ_URL'].replaceAll('^mongodb://([^:]*):([^@]*)@([^:]*):([^/]*)/(.*)?','$4') }"/>
-      <property name="dbName" value="#{systemEnvironment['MONGOHQ_URL'].replaceAll('^mongodb://([^:]*):([^@]*)@([^:]*):([^/]*)/(.*)?','$5') }"/>
-      <property name="username" value="#{systemEnvironment['MONGOHQ_URL'].replaceAll('^mongodb://([^:]*):([^@]*)@([^:]*):([^/]*)/(.*)?','$1') }"/>
-      <property name="password" value="#{systemEnvironment['MONGOHQ_URL'].replaceAll('^mongodb://([^:]*):([^@]*)@([^:]*):([^/]*)/(.*)?','$2') }"/>
-  </bean>
+     <bean id="mongo" class="com.mongodb.Mongo">
+       <constructor-arg index="0" value="#{ @mongoURI.getHost() }"/>
+       <constructor-arg index="1" value="#{ @mongoURI.getPort() }"/>
+     </bean>
+  
+    <!-- create db object by calling getDB on mongo bean -->
+    <bean id="db" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+      <property name="targetObject"><ref local="mongo"/></property>
+      <property name="targetMethod"><value>getDB</value></property>
+      <property name="arguments">
+        <list>
+          <value>#{ @mongoURI.getPath().substring(1) }</value>
+        </list>
+      </property>
+    </bean>  
+ 
+    <!-- call authenticate on db object -->
+    <bean id="authenticateDB"
+        class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetObject"><ref local="db" /></property>
+        <property name="targetMethod">
+            <value>authenticate</value>
+        </property>
+        <property name="arguments">
+            <list>
+                <value>#{ @mongoURI.getUserInfo().split(':',2)[0] }</value>
+                <value>#{ @mongoURI.getUserInfo().split(':',2)[1] }</value>
+            </list>
+        </property>
+    </bean>
 
 </beans>

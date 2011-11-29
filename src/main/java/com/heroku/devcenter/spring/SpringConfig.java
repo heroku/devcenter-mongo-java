@@ -1,27 +1,35 @@
 package com.heroku.devcenter.spring;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.mongodb.DB;
+import com.mongodb.Mongo;
+import com.mongodb.MongoException;
+
 @Configuration
 public class SpringConfig {
-
+	
 	@Bean
-	public MongoConfig getMongoConfig() {
-		Pattern pattern = Pattern.compile("^mongodb://([^:]*):([^@]*)@([^:]*):([^/]*)/(.*)?");
-		//Parse the configuration URL
-        Matcher matcher = pattern.matcher(System.getenv("MONGOHQ_URL"));
-        matcher.matches();
+	public DB getDb() throws UnknownHostException, MongoException {
+		DB db = null;
+		try {
+			URI mongoURI = new URI(System.getenv("MONGOHQ_URL"));
+			System.out.println("Setting up new mongo client for connection " + mongoURI);
+			Mongo mongo = new Mongo(mongoURI.getHost(), mongoURI.getPort());
+			//substring is to remove leading slash in path
+			db = mongo.getDB(mongoURI.getPath().substring(1));
+			db.authenticate(mongoURI.getUserInfo().split(":",2)[0], mongoURI.getUserInfo().split(":",2)[1].toCharArray());	
+		} catch (URISyntaxException e) {
+			throw new RuntimeException("Mongo couldn't be configured from URL in MONGOHQ_URL env var: "+
+					System.getenv("MONGOHQ_URL"));
+		}
         
-        MongoConfig config = new MongoConfig();
-		config.setHost(matcher.group(3));
-		config.setPort(Integer.parseInt(matcher.group(4)));
-		config.setDbName(matcher.group(5));
-		config.setUsername(matcher.group(1));
-		config.setPassword(matcher.group(2));
-		return config;		
+        return db;
 	}
+
 }

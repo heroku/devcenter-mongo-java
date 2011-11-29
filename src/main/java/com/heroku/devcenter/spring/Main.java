@@ -21,11 +21,8 @@ public class Main {
 	public static void main(String[] args) throws UnknownHostException, MongoException {
 		ApplicationContext ctx = new AnnotationConfigApplicationContext(SpringConfig.class);
 		//ApplicationContext ctx = new GenericXmlApplicationContext("applicationContext.xml");
-		MongoConfig config = ctx.getBean(MongoConfig.class);		
 
-		Mongo mongo = new Mongo(config.getHost(), config.getPort());
-        DB db = mongo.getDB(config.getDbName());
-        db.authenticate(config.getUsername(), config.getPassword().toCharArray());
+        DB db = ctx.getBean(DB.class);
         Set<String> colls = db.getCollectionNames();
         System.out.println("Collections found in DB (Spring Configuration): " + colls.toString());
 	}
