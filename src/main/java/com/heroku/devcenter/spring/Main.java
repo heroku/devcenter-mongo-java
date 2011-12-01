@@ -19,6 +19,7 @@ public class Main {
 	 * @throws UnknownHostException 
 	 */
 	public static void main(String[] args) throws UnknownHostException, MongoException {
+		System.out.println("Launching MongoDB sample application with Spring configuration.");
 		ApplicationContext ctx = new AnnotationConfigApplicationContext(SpringConfig.class);
 		//ApplicationContext ctx = new GenericXmlApplicationContext("applicationContext.xml");
 
