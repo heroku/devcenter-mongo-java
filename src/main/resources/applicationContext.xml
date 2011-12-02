@@ -10,24 +10,14 @@
     <context:annotation-config/>
     <context:property-placeholder/>
   
-    <bean id="mongoURI" class="java.net.URI">
+    <bean id="mongoURI" class="com.mongodb.MongoURI">
       <constructor-arg value="${MONGOHQ_URL}"/>
     </bean>
-
-     <bean id="mongo" class="com.mongodb.Mongo">
-       <constructor-arg index="0" value="#{ @mongoURI.getHost() }"/>
-       <constructor-arg index="1" value="#{ @mongoURI.getPort() }"/>
-     </bean>
   
     <!-- create db object by calling getDB on mongo bean -->
     <bean id="db" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-      <property name="targetObject"><ref local="mongo"/></property>
-      <property name="targetMethod"><value>getDB</value></property>
-      <property name="arguments">
-        <list>
-          <value>#{ @mongoURI.getPath().substring(1) }</value>
-        </list>
-      </property>
+      <property name="targetObject"><ref local="mongoURI"/></property>
+      <property name="targetMethod"><value>connectDB</value></property>
     </bean>  
  
     <!-- call authenticate on db object -->
@@ -39,8 +29,8 @@
         </property>
         <property name="arguments">
             <list>
-                <value>#{ @mongoURI.getUserInfo().split(':',2)[0] }</value>
-                <value>#{ @mongoURI.getUserInfo().split(':',2)[1] }</value>
+                <value>#{ @mongoURI.getUsername() }</value>
+                <value>#{ @mongoURI.getPassword() }</value>
             </list>
         </property>
     </bean>

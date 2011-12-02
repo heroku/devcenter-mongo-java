@@ -17,10 +17,9 @@ Add the following dependency to your pom.xml:
     :::java
     URI mongoURI = new URI(System.getenv("MONGOHQ_URL"));
     
-    Mongo mongo = new Mongo(mongoURI.getHost(), mongoURI.getPort());
-    //substring is to remove leading slash in path
-    db = mongo.getDB(mongoURI.getPath().substring(1));
-    db.authenticate(mongoURI.getUserInfo().split(":",2)[0], mongoURI.getUserInfo().split(":",2)[1].toCharArray());    
+    MongoURI mongoURI = new MongoURI(System.getenv("MONGOHQ_URL"));
+    DB db = mongoURI.connectDB();
+    db.authenticate(mongoURI.getUsername(), mongoURI.getPassword());  
     //Use the db object to talk to MongoDB
     Set<String> colls = db.getCollectionNames();
 
@@ -33,17 +32,9 @@ Use the following Java Configuration class to set up a `DB` object as a singleto
     public class SpringConfig {
         @Bean
         public DB getDb() throws UnknownHostException, MongoException {
-            DB db = null;
-            try {
-                URI mongoURI = new URI(System.getenv("MONGOHQ_URL"));
-                Mongo mongo = new Mongo(mongoURI.getHost(), mongoURI.getPort());
-                //substring is to remove leading slash in path
-                db = mongo.getDB(mongoURI.getPath().substring(1));
-                db.authenticate(mongoURI.getUserInfo().split(":",2)[0], mongoURI.getUserInfo().split(":",2)[1].toCharArray());    
-            } catch (URISyntaxException e) {
-                throw new RuntimeException("Mongo couldn't be configured from URL in MONGOHQ_URL env var: "+
-                        System.getenv("MONGOHQ_URL"));
-            }
+            MongoURI mongoURI = new MongoURI(System.getenv("MONGOHQ_URL"));
+            DB db = mongoURI.connectDB();
+            db.authenticate(mongoURI.getUsername(), mongoURI.getPassword());
             
             return db;
         }
@@ -64,24 +55,14 @@ or the following XML configuration file:
         <context:annotation-config/>
         <context:property-placeholder/>
       
-        <bean id="mongoURI" class="java.net.URI">
+        <bean id="mongoURI" class="com.mongodb.MongoURI">
           <constructor-arg value="${MONGOHQ_URL}"/>
         </bean>
-    
-         <bean id="mongo" class="com.mongodb.Mongo">
-           <constructor-arg index="0" value="#{ @mongoURI.getHost() }"/>
-           <constructor-arg index="1" value="#{ @mongoURI.getPort() }"/>
-         </bean>
-    
+      
         <!-- create db object by calling getDB on mongo bean -->
         <bean id="db" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-          <property name="targetObject"><ref local="mongo"/></property>
-          <property name="targetMethod"><value>getDB</value></property>
-          <property name="arguments">
-            <list>
-              <value>#{ @mongoURI.getPath().substring(1) }</value>
-            </list>
-          </property>
+          <property name="targetObject"><ref local="mongoURI"/></property>
+          <property name="targetMethod"><value>connectDB</value></property>
         </bean>  
      
         <!-- call authenticate on db object -->
@@ -93,8 +74,8 @@ or the following XML configuration file:
             </property>
             <property name="arguments">
                 <list>
-                    <value>#{ @mongoURI.getUserInfo().split(':',2)[0] }</value>
-                    <value>#{ @mongoURI.getUserInfo().split(':',2)[1] }</value>
+                    <value>#{ @mongoURI.getUsername() }</value>
+                    <value>#{ @mongoURI.getPassword() }</value>
                 </list>
             </property>
         </bean>

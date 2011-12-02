@@ -8,7 +8,6 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.support.GenericXmlApplicationContext;
 
 import com.mongodb.DB;
-import com.mongodb.Mongo;
 import com.mongodb.MongoException;
 
 public class Main {

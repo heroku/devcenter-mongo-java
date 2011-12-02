@@ -1,14 +1,11 @@
 package com.heroku.devcenter;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import com.mongodb.DB;
-import com.mongodb.Mongo;
 import com.mongodb.MongoException;
+import com.mongodb.MongoURI;
 
 public class Main {
 
@@ -17,21 +14,12 @@ public class Main {
 	 * @throws MongoException 
 	 * @throws UnknownHostException 
 	 */
-	public static void main(String[] args) throws UnknownHostException, MongoException {
+	public static void main(String[] args) throws MongoException, UnknownHostException {
 		System.out.println("Launching MongoDB sample application.");
 		
-		DB db = null;
-		try {
-			URI mongoURI = new URI(System.getenv("MONGOHQ_URL"));
-			
-			Mongo mongo = new Mongo(mongoURI.getHost(), mongoURI.getPort());
-			//substring is to remove leading slash in path
-	        db = mongo.getDB(mongoURI.getPath().substring(1));
-	        db.authenticate(mongoURI.getUserInfo().split(":",2)[0], mongoURI.getUserInfo().split(":",2)[1].toCharArray());			
-
-		} catch (URISyntaxException e) {
-			throw new RuntimeException("Mongo couldn't be configured from URL in MONGOHQ_URL env var");
-		}
+		MongoURI mongoURI = new MongoURI(System.getenv("MONGOHQ_URL"));
+        DB db = mongoURI.connectDB();
+        db.authenticate(mongoURI.getUsername(), mongoURI.getPassword());		
 
         Set<String> colls = db.getCollectionNames();
         System.out.println("Collections found in DB: " + colls.toString());
